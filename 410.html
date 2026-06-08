@@ -1,15 +1,165 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
-<meta charset="utf-8">
-<title>410 Gone</title>
-<style>
-body{text-align:center;font-family:sans-serif;margin:0}
-h1{background:#333;color:white;margin:0;padding:1em}
-.dummy{font-size:128px}
-</style>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>410 — Gone</title>
+  <style>
+    :root { --a:#94A3B8; --a2:#475569; --w:#F5F5F5; color-scheme:dark; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:var(--w); font-family:"SF Mono",ui-monospace,Menlo,Monaco,Consolas,monospace; min-height:100dvh; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    #c { position:fixed; inset:0; pointer-events:none; z-index:0; }
+    .crt { position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(148,163,184,.025) 2px,rgba(148,163,184,.025) 4px); pointer-events:none; z-index:2; }
+    .scan-bar { position:fixed; left:0; right:0; height:6px; background:linear-gradient(to bottom,transparent,rgba(148,163,184,.06),transparent); animation:scanDown 9s linear infinite; pointer-events:none; z-index:3; }
+    @keyframes scanDown { from{top:-6px} to{top:100dvh} }
+    .vignette { position:fixed; inset:0; background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,2,.97) 100%); pointer-events:none; z-index:2; }
+    .grid { position:fixed; inset:0; background-image:linear-gradient(rgba(148,163,184,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.018) 1px,transparent 1px); background-size:44px 44px; pointer-events:none; z-index:1; }
+    .hud { position:fixed; font-size:9px; letter-spacing:.28em; text-transform:uppercase; color:rgba(148,163,184,.45); line-height:1.9; z-index:40; pointer-events:none; }
+    .hud-tl{top:18px;left:22px} .hud-tr{top:18px;right:22px;text-align:right} .hud-bl{bottom:18px;left:22px;color:rgba(245,245,245,.2)} .hud-br{bottom:18px;right:22px;text-align:right} .hud span{color:rgba(245,245,245,.25)}
+    main { position:relative; z-index:20; text-align:center; padding:16px 24px; display:flex; flex-direction:column; align-items:center; animation:fadeUp .8s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
+    .num-wrap { position:relative; line-height:.82; margin-bottom:10px; }
+    .num { font-size:clamp(5.5rem,22vw,17rem); font-weight:900; letter-spacing:-.02em; color:var(--a); text-shadow:0 0 24px rgba(148,163,184,.4),0 0 70px rgba(148,163,184,.15); position:relative; display:inline-block; animation:ng 9s ease-in-out infinite; }
+    @keyframes ng { 0%,100%{transform:none;filter:none;opacity:1} 44%{opacity:1} 45%{transform:skewX(-2deg);filter:brightness(1.2);opacity:.95} 45.5%{transform:none;filter:none;opacity:1} 89%{opacity:1} 90%{opacity:.7;filter:brightness(.8)} 91%{opacity:1;filter:none} }
+    .num::before,.num::after{content:attr(data-t);position:absolute;inset:0;pointer-events:none}
+    .num::before{color:rgba(71,85,105,.7);clip-path:polygon(0 0,100% 0,100% 40%,0 40%);animation:caA 9s ease-in-out infinite}
+    .num::after{color:rgba(203,213,225,.4);clip-path:polygon(0 62%,100% 62%,100% 100%,0 100%);animation:caB 9s ease-in-out infinite}
+    @keyframes caA { 0%,44.9%,46%,100%{transform:translate(-3px,0)} 45%{transform:translate(-6px,-1px);clip-path:polygon(0 5%,100% 5%,100% 48%,0 48%)} }
+    @keyframes caB { 0%,44.9%,46%,100%{transform:translate(3px,0)} 45%{transform:translate(6px,1px);clip-path:polygon(0 52%,100% 52%,100% 96%,0 96%)} }
+    .divider { display:flex; align-items:center; gap:14px; width:min(460px,90vw); margin-bottom:22px; }
+    .divider-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,.4))}
+    .divider-line:last-child{background:linear-gradient(90deg,rgba(148,163,184,.4),transparent)}
+    .divider-label { font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--a); text-shadow:0 0 8px rgba(148,163,184,.5); white-space:nowrap; animation:fade 6s ease-in-out infinite; }
+    @keyframes fade{0%,100%{opacity:.8}50%{opacity:.3}}
+    .msg{max-width:520px;margin-bottom:20px}
+    .msg-heading{font-size:clamp(1rem,2.2vw,1.35rem);font-weight:400;line-height:1.9;margin-bottom:10px}
+    .msg-heading em{font-style:normal;color:var(--a);text-shadow:0 0 8px rgba(148,163,184,.5)}
+    .msg-sub{font-size:.78rem;color:#555;line-height:2.1}
+    /* Deletion record */
+    .del-card { width:min(460px,92vw); background:rgba(0,0,0,.7); border:1px solid rgba(148,163,184,.12); border-radius:8px; padding:18px 20px; margin-bottom:14px; }
+    .del-title { font-size:9px; letter-spacing:.28em; text-transform:uppercase; color:rgba(148,163,184,.4); margin-bottom:14px; }
+    .del-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.04); }
+    .del-row:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .del-key { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#444; }
+    .del-val { font-size:10.5px; color:rgba(148,163,184,.6); }
+    .del-val.strikethrough { text-decoration:line-through; color:#333; }
+    .del-val.red { color:#FF5F57; }
+    .del-stamp { margin-top:14px; padding:8px 12px; background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.1); border-radius:4px; text-align:center; font-size:9px; letter-spacing:.3em; text-transform:uppercase; color:rgba(148,163,184,.3); animation:fade 4s ease-in-out infinite; }
+    .term { width:min(460px,92vw); background:rgba(0,0,0,.75); border:1px solid rgba(148,163,184,.12); border-radius:8px; overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.8),0 20px 60px rgba(0,0,0,.6); }
+    .term-bar{background:rgba(255,255,255,.02);border-bottom:1px solid rgba(148,163,184,.08);padding:8px 12px;display:flex;align-items:center;gap:6px}
+    .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .d-r{background:#FF5F5755}.d-y{background:#FEBC2E55}.d-g{background:#2ECC4055}
+    .term-title{flex:1;text-align:center;font-size:10px;letter-spacing:.2em;color:rgba(255,255,255,.18);text-transform:uppercase}
+    .term-body{padding:13px 18px}
+    .tl{font-size:10.5px;line-height:1.9}
+    .tp{color:var(--a)} .tc{color:rgba(245,245,245,.7)} .tdim{color:rgba(255,255,255,.3)} .te{color:#FF5F5799}
+    .cursor{display:inline-block;width:7px;height:13px;background:var(--a);vertical-align:middle;margin-left:1px;opacity:.5;animation:cur 1.1s step-end infinite}
+    @keyframes cur{0%,100%{opacity:.5}50%{opacity:0}}
+    @media(max-width:600px){.hud-tr,.hud-br{display:none}}
+  </style>
+</head>
 <body>
-<h1>410 Gone</h1>
-<div class="dummy">👻</div>
-<p>もう消えたで。戻ってこーへんと思ってな。</p>
+  <canvas id="c"></canvas>
+  <div class="crt"></div><div class="scan-bar"></div>
+  <div class="vignette"></div><div class="grid"></div>
+  <div class="hud hud-tl">HTTP/1.1<br><span>Server: nginx/1.24.0</span></div>
+  <div class="hud hud-tr" id="clk">--:--:--<br><span>JST / UTC+9</span></div>
+  <div class="hud hud-bl" id="xy">x:---- y:----</div>
+  <div class="hud hud-br"><span>status: deleted</span><br><span>recoverable: false</span></div>
+  <main>
+    <div class="num-wrap">
+      <div class="num" data-t="410" id="bigNum">410</div>
+    </div>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">&#x2205; GONE — PERMANENTLY</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="msg">
+      <div class="msg-heading">
+        このページは<br>
+        <em><span id="scr">永遠に消えてしまいました。</span></em>
+      </div>
+      <p class="msg-sub">
+        このリソースは完全に削除され、復元できません。<br>
+        404とは異なり、二度と戻ってきません。
+      </p>
+    </div>
+    <div class="del-card">
+      <div class="del-title">Deletion Record</div>
+      <div class="del-row">
+        <span class="del-key">Resource</span>
+        <span class="del-val strikethrough">/this/page</span>
+      </div>
+      <div class="del-row">
+        <span class="del-key">Deleted at</span>
+        <span class="del-val" id="delTime">--:--:-- JST</span>
+      </div>
+      <div class="del-row">
+        <span class="del-key">Reason</span>
+        <span class="del-val">Permanently removed by owner</span>
+      </div>
+      <div class="del-row">
+        <span class="del-key">Recoverable</span>
+        <span class="del-val red">&#x2717; No</span>
+      </div>
+      <div class="del-stamp">This record cannot be undone</div>
+    </div>
+    <div class="term">
+      <div class="term-bar">
+        <div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div>
+        <div class="term-title">audit.log — read-only</div>
+      </div>
+      <div class="term-body">
+        <div class="tl"><span class="tp">$ </span><span class="tc">curl -I https://example.com/this/page</span></div>
+        <div class="tl"><span class="tdim">HTTP/1.1 410 Gone</span></div>
+        <div class="tl"><span class="tdim">X-Resource-Status: permanently-deleted</span></div>
+        <div class="tl" style="margin-top:4px"><span class="tp">$ </span><span class="tc">find / -path "/this/page" 2&gt;/dev/null</span></div>
+        <div class="tl"><span class="te">&#x2717;  Resource not found — no redirect available</span></div>
+        <div class="tl" style="margin-top:4px"><span class="tp">$ </span><span class="cursor"></span></div>
+      </div>
+    </div>
+  </main>
+  <script>
+  (() => {
+    const clk=document.getElementById('clk');
+    const now=new Date();
+    document.getElementById('delTime').textContent=now.toLocaleTimeString('ja-JP',{hour12:false})+' JST';
+    setInterval(()=>{clk.childNodes[0].textContent=new Date().toLocaleTimeString('ja-JP',{hour12:false})+'\n'},1000);
+    const xyEl=document.getElementById('xy');
+    document.addEventListener('mousemove',e=>{xyEl.textContent=`x:${String(e.clientX).padStart(4,'0')} y:${String(e.clientY).padStart(4,'0')}`});
+    const big=document.getElementById('bigNum');
+    document.addEventListener('mousemove',e=>{
+      const cx=window.innerWidth/2,cy=window.innerHeight/2,dx=(e.clientX-cx)/cx,dy=(e.clientY-cy)/cy;
+      big.style.textShadow=`${-dx*3}px ${-dy*3}px 24px rgba(148,163,184,.4),0 0 70px rgba(148,163,184,.15),${dx*8}px ${dy*8}px 0 rgba(71,85,105,.5),${-dx*8}px ${-dy*8}px 0 rgba(203,213,225,.3)`;
+    });
+    const CHARS='!<>-_\\/[]{}=+*^?#|&#x2205;';const orig='永遠に消えてしまいました。';const scrEl=document.getElementById('scr');let timer=null;
+    const scramble=()=>{let f=0,t=20;clearInterval(timer);timer=setInterval(()=>{let o='';for(let i=0;i<orig.length;i++)o+=f/t>i/orig.length?orig[i]:CHARS[Math.floor(Math.random()*CHARS.length)];scrEl.textContent=o;if(++f>t){scrEl.textContent=orig;clearInterval(timer)}},42)};
+    scramble();setInterval(scramble,7000+Math.random()*3000);
+    // Canvas: particles that slowly fade and disappear (ghost-like)
+    const canvas=document.getElementById('c');const ctx=canvas.getContext('2d');let W,H,pts=[];
+    const resize=()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight};
+    const mkPt=()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.5,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,ph:Math.random()*Math.PI*2,maxA:Math.random()*.4+.1,fadeIn:Math.random()<.5});
+    const init=()=>{pts=Array.from({length:55},mkPt)};
+    const draw=(ts)=>{
+      requestAnimationFrame(draw);ctx.clearRect(0,0,W,H);
+      const t=ts*.001;
+      for(const p of pts){
+        p.ph+=.007;
+        // Gentle fade in/out cycle
+        const cycle=.5+.5*Math.sin(p.ph);
+        const a=p.maxA*cycle;
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*6);
+        g.addColorStop(0,`rgba(148,163,184,${a*.3})`);g.addColorStop(1,'rgba(148,163,184,0)');
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r*6,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(148,163,184,${a})`;ctx.fill();
+        p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      }
+    };
+    resize();init();requestAnimationFrame(draw);
+    window.addEventListener('resize',()=>{resize();init()});
+  })();
+  </script>
 </body>
 </html>
