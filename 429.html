@@ -1,15 +1,180 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
-<meta charset="utf-8">
-<title>429 Too Many Requests</title>
-<style>
-body{text-align:center;font-family:sans-serif;margin:0}
-h1{background:#333;color:white;margin:0;padding:1em}
-.dummy{font-size:128px}
-</style>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>429 — Too Many Requests</title>
+  <style>
+    :root { --a:#FFE600; --a2:#F59E0B; --w:#F5F5F5; color-scheme:dark; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:var(--w); font-family:"SF Mono",ui-monospace,Menlo,Monaco,Consolas,monospace; min-height:100dvh; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    #c { position:fixed; inset:0; pointer-events:none; z-index:0; }
+    .crt { position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(255,230,0,.035) 2px,rgba(255,230,0,.035) 4px); pointer-events:none; z-index:2; }
+    .scan-bar { position:fixed; left:0; right:0; height:6px; background:linear-gradient(to bottom,transparent,rgba(255,230,0,.09),transparent); animation:scanDown 2.5s linear infinite; pointer-events:none; z-index:3; }
+    @keyframes scanDown { from{top:-6px} to{top:100dvh} }
+    .vignette { position:fixed; inset:0; background:radial-gradient(ellipse at center,transparent 30%,rgba(8,6,0,.96) 100%); pointer-events:none; z-index:2; }
+    .grid { position:fixed; inset:0; background-image:linear-gradient(rgba(255,230,0,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,230,0,.022) 1px,transparent 1px); background-size:44px 44px; pointer-events:none; z-index:1; }
+    .hud { position:fixed; font-size:9px; letter-spacing:.28em; text-transform:uppercase; color:rgba(255,230,0,.6); line-height:1.9; z-index:40; pointer-events:none; }
+    .hud-tl{top:18px;left:22px} .hud-tr{top:18px;right:22px;text-align:right} .hud-bl{bottom:18px;left:22px;color:rgba(245,245,245,.25)} .hud-br{bottom:18px;right:22px;text-align:right} .hud span{color:rgba(245,245,245,.3)}
+    main { position:relative; z-index:20; text-align:center; padding:16px 24px; display:flex; flex-direction:column; align-items:center; animation:fadeUp .8s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
+    .num-wrap { position:relative; line-height:.82; margin-bottom:10px; }
+    .num { font-size:clamp(5.5rem,22vw,17rem); font-weight:900; letter-spacing:-.02em; color:var(--a); text-shadow:0 0 24px rgba(255,230,0,.6),0 0 70px rgba(255,230,0,.3); position:relative; display:inline-block; animation:ng 1.8s ease-in-out infinite; }
+    @keyframes ng {
+      0%,100%{transform:none;filter:none}
+      4.9%{transform:none} 5%{transform:skewX(-12deg) scaleX(1.05);filter:brightness(1.8)} 5.3%{transform:skewX(8deg);filter:none} 5.6%{transform:none}
+      34.9%{transform:none} 35%{transform:translateX(-7px) scaleY(1.02)} 35.25%{transform:translateX(9px)} 35.5%{transform:none}
+      64.9%{transform:none} 65%{transform:skewX(-6deg);filter:hue-rotate(15deg)} 65.3%{transform:none;filter:none}
+    }
+    .num::before,.num::after{content:attr(data-t);position:absolute;inset:0;pointer-events:none}
+    .num::before{color:rgba(255,100,0,.65);clip-path:polygon(0 0,100% 0,100% 40%,0 40%);animation:caA 1.8s ease-in-out infinite}
+    .num::after{color:rgba(255,255,100,.55);clip-path:polygon(0 62%,100% 62%,100% 100%,0 100%);animation:caB 1.8s ease-in-out infinite}
+    @keyframes caA { 0%,4.9%,6%,34.9%,36%,64.9%,66%,100%{transform:translate(-3px,0)} 5%{transform:translate(-12px,-3px);clip-path:polygon(0 2%,100% 2%,100% 48%,0 48%)} 5.35%{transform:translate(-2px,3px)} 35%{transform:translate(-9px,0)} 65%{transform:translate(-7px,-1px);clip-path:polygon(0 8%,100% 8%,100% 50%,0 50%)} }
+    @keyframes caB { 0%,4.9%,6%,34.9%,36%,64.9%,66%,100%{transform:translate(3px,0)} 5%{transform:translate(12px,3px);clip-path:polygon(0 52%,100% 52%,100% 98%,0 98%)} 5.35%{transform:translate(2px,-3px)} 35%{transform:translate(9px,0)} 65%{transform:translate(7px,1px);clip-path:polygon(0 58%,100% 58%,100% 100%,0 100%)} }
+    .divider { display:flex; align-items:center; gap:14px; width:min(460px,90vw); margin-bottom:22px; }
+    .divider-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,230,0,.5))}
+    .divider-line:last-child{background:linear-gradient(90deg,rgba(255,230,0,.5),transparent)}
+    .divider-label { font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--a); text-shadow:0 0 10px rgba(255,230,0,.8); white-space:nowrap; animation:critBlink .5s ease-in-out infinite; }
+    @keyframes critBlink{0%,100%{opacity:1}50%{opacity:.3}}
+    .msg{max-width:520px;margin-bottom:20px}
+    .msg-heading{font-size:clamp(1rem,2.2vw,1.35rem);font-weight:400;line-height:1.9;margin-bottom:10px}
+    .msg-heading em{font-style:normal;color:var(--a);text-shadow:0 0 10px rgba(255,230,0,.6)}
+    .msg-sub{font-size:.78rem;color:#666;line-height:2.1}
+    /* Rate limit widget */
+    .rate-box { width:min(460px,92vw); background:rgba(0,0,0,.7); border:1px solid rgba(255,230,0,.2); border-radius:8px; padding:16px 20px; margin-bottom:14px; }
+    .rate-row { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px 12px; margin-bottom:10px; }
+    .rate-row:last-child{margin-bottom:0}
+    .rate-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#555;white-space:nowrap}
+    .rate-bar-wrap{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+    .rate-bar{height:100%;border-radius:3px}
+    .rate-bar.over{background:linear-gradient(90deg,#FF6600,#FFE600);box-shadow:0 0 8px rgba(255,230,0,.7);animation:overPulse .4s ease-in-out infinite}
+    .rate-bar.ok{background:linear-gradient(90deg,#22c55e,#4ade80)}
+    @keyframes overPulse{0%,100%{opacity:1}50%{opacity:.5}}
+    .rate-val{font-size:9px;text-align:right;white-space:nowrap}
+    .rate-val.over{color:var(--a);text-shadow:0 0 6px rgba(255,230,0,.7)}
+    .rate-val.ok{color:#4ade80}
+    .retry-row { margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,230,0,.1); display:flex; align-items:center; justify-content:space-between; }
+    .retry-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#555}
+    .retry-val{font-size:18px;font-weight:900;color:var(--a);text-shadow:0 0 12px rgba(255,230,0,.7);letter-spacing:.05em}
+    .term { width:min(460px,92vw); background:rgba(0,0,0,.75); border:1px solid rgba(255,230,0,.18); border-radius:8px; overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.8),0 20px 60px rgba(0,0,0,.6); }
+    .term-bar{background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,230,0,.1);padding:8px 12px;display:flex;align-items:center;gap:6px}
+    .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .d-r{background:#FF5F57}.d-y{background:#FEBC2E;animation:critBlink .5s ease-in-out infinite}.d-g{background:#2ECC40}
+    .term-title{flex:1;text-align:center;font-size:10px;letter-spacing:.2em;color:rgba(255,255,255,.22);text-transform:uppercase}
+    .term-body{padding:13px 18px}
+    .tl{font-size:10.5px;line-height:1.9}
+    .tp{color:var(--a)} .tc{color:var(--w)} .tdim{color:rgba(255,255,255,.4)} .te{color:#FF5F57} .tw{color:var(--a)}
+    .cursor{display:inline-block;width:7px;height:13px;background:var(--a);vertical-align:middle;margin-left:1px;box-shadow:0 0 6px rgba(255,230,0,.8);animation:cur 1.1s step-end infinite}
+    @keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+    @media(max-width:600px){.hud-tr,.hud-br{display:none}}
+  </style>
+</head>
 <body>
-<h1>429 Too Many Requests</h1>
-<div class="dummy">🚦</div>
-<p>リクエスト多すぎや。ちょっと落ち着いて。</p>
+  <canvas id="c"></canvas>
+  <div class="crt"></div><div class="scan-bar"></div>
+  <div class="vignette"></div><div class="grid"></div>
+  <div class="hud hud-tl">HTTP/1.1<br><span>Server: nginx/1.24.0</span></div>
+  <div class="hud hud-tr" id="clk">--:--:--<br><span>JST / UTC+9</span></div>
+  <div class="hud hud-bl" id="xy">x:---- y:----</div>
+  <div class="hud hud-br"><span id="reqCount">req: 0</span><br><span>limit: 100/min</span></div>
+  <main>
+    <div class="num-wrap">
+      <div class="num" data-t="429" id="bigNum">429</div>
+    </div>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">! TOO MANY REQUESTS</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="msg">
+      <div class="msg-heading">
+        少し<br>
+        <em><span id="scr">落ち着いてください。</span></em>
+      </div>
+      <p class="msg-sub">
+        短時間に送られたリクエストが多すぎます。<br>
+        しばらく待ってから再度お試しください。
+      </p>
+    </div>
+    <div class="rate-box">
+      <div class="rate-row">
+        <div class="rate-label">Requests</div>
+        <div class="rate-bar-wrap"><div class="rate-bar over" style="width:247%"></div></div>
+        <div class="rate-val over"><span id="reqDisp">247</span>/min</div>
+      </div>
+      <div class="rate-row">
+        <div class="rate-label">Limit</div>
+        <div class="rate-bar-wrap"><div class="rate-bar ok" style="width:100%"></div></div>
+        <div class="rate-val ok">100/min</div>
+      </div>
+      <div class="retry-row">
+        <div class="retry-label">Retry-After</div>
+        <div class="retry-val"><span id="countdown">60</span>s</div>
+      </div>
+    </div>
+    <div class="term">
+      <div class="term-bar">
+        <div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div>
+        <div class="term-title">rate-limiter.log</div>
+      </div>
+      <div class="term-body">
+        <div class="tl"><span class="tp">$ </span><span class="tc">GET /api/data (x<span id="reqTerm">247</span>)</span></div>
+        <div class="tl"><span class="tdim">HTTP/1.1 429 Too Many Requests</span></div>
+        <div class="tl"><span class="tdim">Retry-After: <span id="retryHeader">60</span></span></div>
+        <div class="tl"><span class="tdim">X-RateLimit-Limit: 100</span></div>
+        <div class="tl" style="margin-top:4px"><span class="te">&#10005;  Rate limit exceeded. Cooling down...</span></div>
+        <div class="tl" style="margin-top:4px"><span class="tp">$ </span><span class="tc">sleep <span id="sleepVal">60</span> &amp;&amp; retry</span></div>
+        <div class="tl"><span class="tp">$ </span><span class="cursor"></span></div>
+      </div>
+    </div>
+  </main>
+  <script>
+  (() => {
+    const clk=document.getElementById('clk');
+    setInterval(()=>{clk.childNodes[0].textContent=new Date().toLocaleTimeString('ja-JP',{hour12:false})+'\n'},1000);
+    const xyEl=document.getElementById('xy');
+    document.addEventListener('mousemove',e=>{xyEl.textContent=`x:${String(e.clientX).padStart(4,'0')} y:${String(e.clientY).padStart(4,'0')}`});
+    const big=document.getElementById('bigNum');
+    document.addEventListener('mousemove',e=>{
+      const cx=window.innerWidth/2,cy=window.innerHeight/2,dx=(e.clientX-cx)/cx,dy=(e.clientY-cy)/cy;
+      big.style.textShadow=`${-dx*3}px ${-dy*3}px 24px rgba(255,230,0,.6),0 0 70px rgba(255,230,0,.3),${dx*10}px ${dy*10}px 0 rgba(255,100,0,.55),${-dx*10}px ${-dy*10}px 0 rgba(255,255,100,.4)`;
+    });
+    // Countdown timer
+    let cd=60;
+    const cdEl=document.getElementById('countdown'),rhEl=document.getElementById('retryHeader'),svEl=document.getElementById('sleepVal');
+    const cdTimer=setInterval(()=>{if(--cd<=0){cd=60}cdEl.textContent=cd;rhEl.textContent=cd;svEl.textContent=cd},1000);
+    // Req counter
+    let rq=247;const rqEl=document.getElementById('reqDisp'),rqTEl=document.getElementById('reqTerm'),rcEl=document.getElementById('reqCount');
+    setInterval(()=>{rq+=Math.floor(Math.random()*8-2);if(rq<150)rq=150;if(rq>350)rq=350;rqEl.textContent=rq;rqTEl.textContent=rq;rcEl.textContent=`req: ${rq}`;},400);
+    // Scramble
+    const CHARS='!<>-_\\/[]{}=+*^?#|';const orig='落ち着いてください。';const scrEl=document.getElementById('scr');let timer=null;
+    const scramble=()=>{let f=0,total=16;clearInterval(timer);timer=setInterval(()=>{let o='';for(let i=0;i<orig.length;i++)o+=f/total>i/orig.length?orig[i]:CHARS[Math.floor(Math.random()*CHARS.length)];scrEl.textContent=o;if(++f>total){scrEl.textContent=orig;clearInterval(timer)}},35)};
+    scramble();setInterval(scramble,2800+Math.random()*1500);
+    // Canvas: rapid many small particles
+    const canvas=document.getElementById('c');const ctx=canvas.getContext('2d');let W,H,pts=[];
+    const resize=()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight};
+    const mkPt=()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*.9+.3,vx:(Math.random()-.5)*2.5,vy:(Math.random()-.5)*2.5,ph:Math.random()*Math.PI*2,life:Math.random(),decay:Math.random()*.02+.008,hue:Math.random()<.6?50:30});
+    const init=()=>{pts=Array.from({length:120},mkPt)};
+    const draw=()=>{
+      requestAnimationFrame(draw);ctx.clearRect(0,0,W,H);
+      for(let i=pts.length-1;i>=0;i--){
+        const p=pts[i];p.life-=p.decay;p.ph+=.025;
+        if(p.life<=0){pts[i]=mkPt();continue}
+        const a=p.life*.7;
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*4);
+        g.addColorStop(0,`hsla(${p.hue},100%,60%,${a*.4})`);g.addColorStop(1,`hsla(${p.hue},100%,50%,0)`);
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r*4,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`hsla(${p.hue},100%,70%,${a})`;ctx.fill();
+        p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0||p.x>W||p.y<0||p.y>H){pts[i]=mkPt()}
+      }
+    };
+    resize();init();requestAnimationFrame(draw);
+    window.addEventListener('resize',()=>{resize();init()});
+    // Rapid glitch tears (more frequent than others)
+    const addTear=()=>{const el=document.createElement('div');el.style.cssText=`position:fixed;left:0;right:0;top:${Math.random()*window.innerHeight}px;height:${Math.random()*2+.5}px;background:rgba(255,230,0,${(.1+Math.random()*.2).toFixed(3)});mix-blend-mode:screen;z-index:5;pointer-events:none`;document.body.appendChild(el);setTimeout(()=>el.remove(),40+Math.random()*80)};
+    const tearLoop=()=>{addTear();if(Math.random()<.4)setTimeout(addTear,20);setTimeout(tearLoop,300+Math.random()*700)};tearLoop();
+  })();
+  </script>
 </body>
 </html>
