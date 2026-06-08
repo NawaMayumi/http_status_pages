@@ -1,15 +1,158 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
-<meta charset="utf-8">
-<title>401 Unauthorized</title>
-<style>
-body{text-align:center;font-family:sans-serif;margin:0}
-h1{background:#333;color:white;margin:0;padding:1em}
-.dummy{font-size:128px}
-</style>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>401 — Unauthorized</title>
+  <style>
+    :root { --a:#A855F7; --a2:#7C3AED; --w:#F5F5F5; color-scheme:dark; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:var(--w); font-family:"SF Mono",ui-monospace,Menlo,Monaco,Consolas,monospace; min-height:100dvh; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    #c { position:fixed; inset:0; pointer-events:none; z-index:0; }
+    .crt { position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(168,85,247,.03) 2px,rgba(168,85,247,.03) 4px); pointer-events:none; z-index:2; }
+    .scan-bar { position:fixed; left:0; right:0; height:6px; background:linear-gradient(to bottom,transparent,rgba(168,85,247,.08),transparent); animation:scanDown 5s linear infinite; pointer-events:none; z-index:3; }
+    @keyframes scanDown { from{top:-6px} to{top:100dvh} }
+    .vignette { position:fixed; inset:0; background:radial-gradient(ellipse at center,transparent 32%,rgba(5,0,12,.95) 100%); pointer-events:none; z-index:2; }
+    .grid { position:fixed; inset:0; background-image:linear-gradient(rgba(168,85,247,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,.02) 1px,transparent 1px); background-size:44px 44px; pointer-events:none; z-index:1; }
+    .hud { position:fixed; font-size:9px; letter-spacing:.28em; text-transform:uppercase; color:rgba(168,85,247,.55); line-height:1.9; z-index:40; pointer-events:none; }
+    .hud-tl{top:18px;left:22px} .hud-tr{top:18px;right:22px;text-align:right} .hud-bl{bottom:18px;left:22px;color:rgba(245,245,245,.25)} .hud-br{bottom:18px;right:22px;text-align:right} .hud span{color:rgba(245,245,245,.3)}
+    main { position:relative; z-index:20; text-align:center; padding:16px 24px; display:flex; flex-direction:column; align-items:center; animation:fadeUp .8s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
+    .num-wrap { position:relative; line-height:.82; margin-bottom:10px; }
+    .num { font-size:clamp(5.5rem,22vw,17rem); font-weight:900; letter-spacing:-.02em; color:var(--a); text-shadow:0 0 24px rgba(168,85,247,.55),0 0 70px rgba(168,85,247,.25); position:relative; display:inline-block; animation:ng 5.5s ease-in-out infinite; }
+    @keyframes ng { 0%,100%{transform:none;filter:none} 29.9%{transform:none} 30%{transform:skewX(-4deg) scaleX(1.02);filter:brightness(1.3) hue-rotate(20deg)} 30.4%{transform:skewX(3deg)} 30.8%{transform:none;filter:none} }
+    .num::before,.num::after{content:attr(data-t);position:absolute;inset:0;pointer-events:none}
+    .num::before{color:rgba(236,72,153,.65);clip-path:polygon(0 0,100% 0,100% 40%,0 40%);animation:caA 5.5s ease-in-out infinite}
+    .num::after{color:rgba(99,102,241,.6);clip-path:polygon(0 62%,100% 62%,100% 100%,0 100%);animation:caB 5.5s ease-in-out infinite}
+    @keyframes caA { 0%,29.9%,31%,100%{transform:translate(-3px,0)} 30%{transform:translate(-8px,-2px);clip-path:polygon(0 5%,100% 5%,100% 48%,0 48%)} 30.5%{transform:translate(-2px,2px)} }
+    @keyframes caB { 0%,29.9%,31%,100%{transform:translate(3px,0)} 30%{transform:translate(8px,2px);clip-path:polygon(0 52%,100% 52%,100% 96%,0 96%)} 30.5%{transform:translate(2px,-2px)} }
+    .divider { display:flex; align-items:center; gap:14px; width:min(460px,90vw); margin-bottom:22px; }
+    .divider-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(168,85,247,.5))}
+    .divider-line:last-child{background:linear-gradient(90deg,rgba(168,85,247,.5),transparent)}
+    .divider-label { font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--a); text-shadow:0 0 10px rgba(168,85,247,.7); white-space:nowrap; animation:pl 2.8s ease-in-out infinite; }
+    @keyframes pl{0%,100%{opacity:1}50%{opacity:.5}}
+    .msg{max-width:520px;margin-bottom:20px}
+    .msg-heading{font-size:clamp(1rem,2.2vw,1.35rem);font-weight:400;line-height:1.9;margin-bottom:10px}
+    .msg-heading em{font-style:normal;color:var(--a);text-shadow:0 0 10px rgba(168,85,247,.6)}
+    .msg-sub{font-size:.78rem;color:#666;line-height:2.1}
+    /* Auth card */
+    .auth-card { width:min(460px,92vw); background:rgba(0,0,0,.7); border:1px solid rgba(168,85,247,.22); border-radius:8px; padding:20px; margin-bottom:14px; box-shadow:0 0 30px rgba(168,85,247,.06),inset 0 0 40px rgba(0,0,0,.5); }
+    .auth-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .lock-icon { font-size:22px; color:var(--a); text-shadow:0 0 14px rgba(168,85,247,.8); animation:lockPulse 2s ease-in-out infinite; }
+    @keyframes lockPulse{0%,100%{text-shadow:0 0 14px rgba(168,85,247,.8)}50%{text-shadow:0 0 28px rgba(168,85,247,1),0 0 50px rgba(168,85,247,.5)}}
+    .auth-title { font-size:10px; letter-spacing:.25em; text-transform:uppercase; color:rgba(168,85,247,.7); }
+    .auth-field { margin-bottom:10px; }
+    .auth-label { font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:#555; margin-bottom:4px; }
+    .auth-input { background:rgba(168,85,247,.06); border:1px solid rgba(168,85,247,.2); border-radius:4px; padding:7px 12px; font-size:11px; font-family:inherit; color:rgba(255,255,255,.3); width:100%; letter-spacing:.1em; }
+    .auth-submit { width:100%; padding:8px; background:rgba(168,85,247,.12); border:1px solid rgba(168,85,247,.3); border-radius:4px; color:rgba(168,85,247,.6); font-size:10px; font-family:inherit; letter-spacing:.25em; text-transform:uppercase; cursor:default; margin-top:4px; }
+    .auth-error { font-size:10px; color:#FF5F57; letter-spacing:.1em; margin-top:10px; text-align:center; animation:pl 1.5s ease-in-out infinite; }
+    .term { width:min(460px,92vw); background:rgba(0,0,0,.75); border:1px solid rgba(168,85,247,.18); border-radius:8px; overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.8),0 20px 60px rgba(0,0,0,.6); }
+    .term-bar{background:rgba(255,255,255,.03);border-bottom:1px solid rgba(168,85,247,.1);padding:8px 12px;display:flex;align-items:center;gap:6px}
+    .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .d-r{background:#FF5F57}.d-y{background:#FEBC2E}.d-g{background:#2ECC40}
+    .term-title{flex:1;text-align:center;font-size:10px;letter-spacing:.2em;color:rgba(255,255,255,.22);text-transform:uppercase}
+    .term-body{padding:13px 18px}
+    .tl{font-size:10.5px;line-height:1.9}
+    .tp{color:var(--a)} .tc{color:var(--w)} .tdim{color:rgba(255,255,255,.4)} .te{color:#FF5F57} .tw{color:#FEBC2E}
+    .cursor{display:inline-block;width:7px;height:13px;background:var(--a);vertical-align:middle;margin-left:1px;box-shadow:0 0 6px rgba(168,85,247,.8);animation:cur 1.1s step-end infinite}
+    @keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+    @media(max-width:600px){.hud-tr,.hud-br{display:none}}
+  </style>
+</head>
 <body>
-<h1>401 Unauthorized</h1>
-<div class="dummy">🔐</div>
-<p>認証が必要やで。ログインしてから来てな。</p>
+  <canvas id="c"></canvas>
+  <div class="crt"></div><div class="scan-bar"></div>
+  <div class="vignette"></div><div class="grid"></div>
+  <div class="hud hud-tl">HTTP/1.1<br><span>Server: nginx/1.24.0</span></div>
+  <div class="hud hud-tr" id="clk">--:--:--<br><span>JST / UTC+9</span></div>
+  <div class="hud hud-bl" id="xy">x:---- y:----</div>
+  <div class="hud hud-br"><span>auth: required</span><br><span>realm: "members"</span></div>
+  <main>
+    <div class="num-wrap">
+      <div class="num" data-t="401" id="bigNum">401</div>
+    </div>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">&#9654; AUTHORIZATION REQUIRED</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="msg">
+      <div class="msg-heading">
+        会員証を<br>
+        <em><span id="scr">見せていただけますか？</span></em>
+      </div>
+      <p class="msg-sub">
+        このページにはログインが必要です。<br>
+        認証情報をお持ちでない場合は登録してください。
+      </p>
+    </div>
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="lock-icon">&#128274;</div>
+        <div class="auth-title">Authentication Required</div>
+      </div>
+      <div class="auth-field">
+        <div class="auth-label">Username</div>
+        <div class="auth-input">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</div>
+      </div>
+      <div class="auth-field">
+        <div class="auth-label">Password</div>
+        <div class="auth-input">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</div>
+      </div>
+      <div class="auth-submit">&#10005; &nbsp; Not Authorized</div>
+      <div class="auth-error">WWW-Authenticate: Bearer realm="members"</div>
+    </div>
+    <div class="term">
+      <div class="term-bar">
+        <div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div>
+        <div class="term-title">auth.log — tail -f</div>
+      </div>
+      <div class="term-body">
+        <div class="tl"><span class="tp">$ </span><span class="tc">curl -H "Authorization: Bearer &lt;token&gt;" /api</span></div>
+        <div class="tl"><span class="tdim">HTTP/1.1 401 Unauthorized</span></div>
+        <div class="tl"><span class="tdim">WWW-Authenticate: Bearer realm="members"</span></div>
+        <div class="tl" style="margin-top:4px"><span class="te">&#10005;  Token expired or invalid</span></div>
+        <div class="tl" style="margin-top:4px"><span class="tp">$ </span><span class="tc">login --refresh-token</span></div>
+        <div class="tl"><span class="tw">&#8635;  Awaiting credentials...</span></div>
+        <div class="tl"><span class="tp">$ </span><span class="cursor"></span></div>
+      </div>
+    </div>
+  </main>
+  <script>
+  (() => {
+    const clk=document.getElementById('clk');
+    setInterval(()=>{clk.childNodes[0].textContent=new Date().toLocaleTimeString('ja-JP',{hour12:false})+'\n'},1000);
+    const xyEl=document.getElementById('xy');
+    document.addEventListener('mousemove',e=>{xyEl.textContent=`x:${String(e.clientX).padStart(4,'0')} y:${String(e.clientY).padStart(4,'0')}`});
+    const big=document.getElementById('bigNum');
+    document.addEventListener('mousemove',e=>{
+      const cx=window.innerWidth/2,cy=window.innerHeight/2,dx=(e.clientX-cx)/cx,dy=(e.clientY-cy)/cy;
+      big.style.textShadow=`${-dx*3}px ${-dy*3}px 24px rgba(168,85,247,.55),0 0 70px rgba(168,85,247,.25),${dx*10}px ${dy*10}px 0 rgba(236,72,153,.5),${-dx*10}px ${-dy*10}px 0 rgba(99,102,241,.5)`;
+    });
+    // Scramble
+    const CHARS='!<>-_\\/[]{}=+*^?#|&#x25A0;&#x25A1;';const orig='見せていただけますか？';const scrEl=document.getElementById('scr');let timer=null;
+    const scramble=()=>{let f=0,total=18;clearInterval(timer);timer=setInterval(()=>{let o='';for(let i=0;i<orig.length;i++)o+=f/total>i/orig.length?orig[i]:CHARS[Math.floor(Math.random()*CHARS.length)];scrEl.textContent=o;if(++f>total){scrEl.textContent=orig;clearInterval(timer)}},40)};
+    scramble();setInterval(scramble,5000+Math.random()*2000);
+    // Orbiting particles
+    const canvas=document.getElementById('c');const ctx=canvas.getContext('2d');let W,H,pts=[];
+    const resize=()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight};
+    const mkPt=()=>{const angle=Math.random()*Math.PI*2;const rad=Math.random()*Math.min(W,H)*.4+60;return{cx:W/2+((Math.random()-.5)*W*.3),cy:H/2+((Math.random()-.5)*H*.3),rad,angle,speed:(Math.random()*.003+.001)*(Math.random()<.5?1:-1),r:Math.random()*1.3+.4,ph:Math.random()*Math.PI*2}};
+    const init=()=>{pts=Array.from({length:55},mkPt)};
+    const draw=()=>{
+      requestAnimationFrame(draw);ctx.clearRect(0,0,W,H);
+      for(const p of pts){
+        p.angle+=p.speed;p.ph+=.015;
+        const x=p.cx+Math.cos(p.angle)*p.rad;const y=p.cy+Math.sin(p.angle)*p.rad;
+        const a=.2+.45*(.5+.5*Math.sin(p.ph));
+        const g=ctx.createRadialGradient(x,y,0,x,y,p.r*5);
+        g.addColorStop(0,`rgba(168,85,247,${a*.35})`);g.addColorStop(1,'rgba(168,85,247,0)');
+        ctx.beginPath();ctx.arc(x,y,p.r*5,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+        ctx.beginPath();ctx.arc(x,y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(168,85,247,${a})`;ctx.fill();
+      }
+    };
+    resize();init();requestAnimationFrame(draw);
+    window.addEventListener('resize',()=>{resize();init()});
+  })();
+  </script>
 </body>
 </html>
